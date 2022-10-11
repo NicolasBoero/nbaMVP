@@ -15,12 +15,7 @@ df['predictions'] = df['predictions'].apply(lambda x : round(x, 3))
 df = df[(df['Share'] != 0) | (df['predictions'] > 0.08)]
 df = df.merge(urls, on = ['Player', 'year'])
 
-
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
-
-
-# --------------LAYOUT---------------------------------------------------------------------------------------------------------
-
 
 app.layout = html.Div([
     dbc.Navbar(
@@ -48,10 +43,7 @@ app.layout = html.Div([
         dbc.Row([
             dbc.Col(
                 dbc.Card([
-                    dcc.Dropdown(id='dropdown_player',
-                                 options=[],
-                                 value=[],
-                                 clearable=False),
+                    dbc.CardHeader(id='actual_mvp'),
                     dbc.Row([
                         dbc.Col(
                             dbc.CardImg(id='pic'),
@@ -139,19 +131,21 @@ app.layout = html.Div([
 
 
 
-# ----------DROPDOWN PLAYER ---------------------------------------------------------------------------------------------------------
+# ---------- ACTUAL MVP---------------------------------------------------------------------------------------------------------
 
 
 @app.callback(
-    [Output('dropdown_player', 'options'),
-     Output('dropdown_player', 'value')],
+    Output('actual_mvp', 'children'),
     Input('dropdown_year', 'value'))
 
-def get_player1(dropdown_year):
+def actual_mvp(dropdown_year):
     yeardf = df[df["year"] == dropdown_year]
-    options = yeardf['Player'].tolist()
-    value = yeardf.loc[yeardf['Share'] == yeardf['Share'].max(), 'Player'].iloc[0]
-    return options, value
+    mvp = yeardf.loc[yeardf['Share'] == yeardf['Share'].max(), 'Player'].iloc[0]
+    return mvp
+
+
+# ----------DROPDOWN PLAYER ---------------------------------------------------------------------------------------------------------
+
 
 @app.callback(
     [Output('dropdown_player2', 'options'),
@@ -170,11 +164,11 @@ def get_player2(dropdown_year):
 
 @app.callback(
     Output('pic', 'src'),
-    [Input('dropdown_year', 'value'),
-    Input('dropdown_player', 'value')])
+    Input('dropdown_year', 'value'))
 
-def get_pic(dropdown_year, dropdown_player):
-    url = df.loc[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player), 'url'].iloc[0]
+def get_pic(dropdown_year):
+    yeardf = df[df["year"] == dropdown_year]
+    url = yeardf.loc[yeardf['Share'] == yeardf['Share'].max(), 'url'].iloc[0]
     r = requests.get(f'https://www.basketball-reference.com/players/{url}.html')
     soup = BeautifulSoup(r.text, 'html.parser')
     short_url = url[2:]
@@ -200,12 +194,12 @@ def get_pic2(dropdown_year, dropdown_pred_player):
 
 @app.callback(
     Output('voting_result', 'children'),
-    [Input('dropdown_year', 'value'),
-    Input('dropdown_player', 'value')])
+    Input('dropdown_year', 'value'))
 
-def voting_result(dropdown_year, dropdown_player):
-    actual_rank =  df.loc[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player), 'actual_rank'].iloc[0]
-    Share = df.loc[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player), 'Share'].iloc[0]
+def voting_result(dropdown_year):
+    yeardf = df[df["year"] == dropdown_year]
+    actual_rank =  yeardf.loc[yeardf['Share'] == yeardf['Share'].max(), 'actual_rank'].iloc[0]
+    Share = yeardf.loc[yeardf['Share'] == yeardf['Share'].max(), 'Share'].iloc[0]
     return f"MVP Rank: {actual_rank} ({Share})"
 
 @app.callback(
@@ -220,12 +214,12 @@ def voting_result2(dropdown_year, dropdown_player):
 
 @app.callback(
     Output('model_prediction', 'children'),
-    [Input('dropdown_year', 'value'),
-    Input('dropdown_player', 'value')])
+    Input('dropdown_year', 'value'))
 
-def model_prediction(dropdown_year, dropdown_player):
-    predicted_rank =  df.loc[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player), 'predicted_rank'].iloc[0]
-    predictions =  df.loc[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player), 'predictions'].iloc[0]
+def model_prediction(dropdown_year):
+    yeardf = df[df["year"] == dropdown_year]
+    predicted_rank =  yeardf.loc[yeardf['Share'] == yeardf['Share'].max(), 'predicted_rank'].iloc[0]
+    predictions =  yeardf.loc[yeardf['Share'] == yeardf['Share'].max(), 'predictions'].iloc[0]
     return f"Prediction: {predicted_rank} ({predictions})"
 
 @app.callback(
@@ -244,11 +238,11 @@ def model_prediction2(dropdown_year, dropdown_player):
 
 @app.callback(
     Output('team_result', 'children'),
-    [Input('dropdown_year', 'value'),
-    Input('dropdown_player', 'value')])
+    Input('dropdown_year', 'value'))
 
-def team_result(dropdown_year, dropdown_player):
-    team_name =  df.loc[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player), 'Team'].iloc[0]
+def team_result(dropdown_year):
+    yeardf = df[df["year"] == dropdown_year]
+    team_name =  yeardf.loc[yeardf['Share'] == yeardf['Share'].max(), 'Team'].iloc[0]
     return f"{team_name}"
 
 @app.callback(
@@ -266,11 +260,11 @@ def team_result2(dropdown_year, dropdown_player):
 
 @app.callback(
     Output('pie_chart', 'figure'),
-    [Input('dropdown_year', 'value'),
-    Input('dropdown_player', 'value')])
+    Input('dropdown_year', 'value'))
 
-def pie(dropdown_year, dropdown_player):
-    pie_stats = df[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player)]
+def pie(dropdown_year):
+    yeardf = df[df["year"] == dropdown_year]
+    pie_stats = yeardf[yeardf['Share'] == yeardf['Share'].max()]
     fig = px.pie(values=[pie_stats['W'].iloc[0], pie_stats['L'].iloc[0]], names=['Wins', 'Losses'], width=300, height=165)
     fig.update_traces(hole=.3, textinfo='value+label', marker=dict(colors=['rgb(88, 158, 58)', 'rgb(168, 54, 39)']))
     fig.add_annotation(text = pie_stats['W/L%'].iloc[0], showarrow=False)
@@ -296,11 +290,11 @@ def pie2(dropdown_year, dropdown_player):
 
 @app.callback(
     Output('per_game_stats', 'children'),
-    [Input('dropdown_year', 'value'),
-    Input('dropdown_player', 'value')])
+    Input('dropdown_year', 'value'))
 
-def per_game_stats(dropdown_year, dropdown_player):
-    per_game_stats = df[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player)][['Age', 'Pos', 'G', 'MP', 'PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', '3P%', 'FT%']]
+def per_game_stats(dropdown_year):
+    yeardf = df[df["year"] == dropdown_year]
+    per_game_stats = yeardf[yeardf['Share'] == yeardf['Share'].max()][['Age', 'Pos', 'G', 'MP', 'PTS', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'FG%', '3P%', 'FT%']]
     return dbc.Table.from_dataframe(per_game_stats, bordered =True, size= 'sm')
 
 @app.callback(
@@ -318,11 +312,11 @@ def per_game_stats2(dropdown_year, dropdown_player):
 
 @app.callback(
     Output('advanced_stats', 'children'),
-    [Input('dropdown_year', 'value'),
-    Input('dropdown_player', 'value')])
+    Input('dropdown_year', 'value'))
 
-def advanced_stats(dropdown_year, dropdown_player):
-    advanced_stats = df[(df["year"] == dropdown_year) & (df["Player"] == dropdown_player)][['USG%', 'PER', 'OWS', 'DWS', 'WS', 'WS/48', 'BPM','VORP', 'TS%', 'eFG%']]
+def advanced_stats(dropdown_year):
+    yeardf = df[df["year"] == dropdown_year]
+    advanced_stats = yeardf[yeardf['Share'] == yeardf['Share'].max()][['USG%', 'PER', 'OWS', 'DWS', 'WS', 'WS/48', 'BPM','VORP', 'TS%', 'eFG%']]
     return dbc.Table.from_dataframe(advanced_stats, bordered =True, size= 'sm')
 
 @app.callback(
