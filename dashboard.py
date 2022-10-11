@@ -344,7 +344,7 @@ def advanced_stats2(dropdown_year, dropdown_player):
 
 def graph_mvp_result(dropdown_year):
     yeardf = df[(df["year"] == dropdown_year) & (df['Share'] != 0)]
-    yeardf['Player'] = yeardf['Player'].apply(lambda x : x.split()[0] if x == 'Giannis Antetokounmpo' else x.split()[1])
+    yeardf['Player'] = yeardf['Player'].apply(lambda x : x.split()[0] if x == 'Giannis Antetokounmpo' or x == 'Magic Johnson' else x.split()[1])
     fig = px.bar(yeardf, x="Player", y="Share", text='Share', width=600, height=300)
     fig.update_xaxes(categoryorder="total descending")
     fig.update_layout(xaxis_title=None, yaxis_title=None, margin=dict(l=10, r=10, t=10, b=10)).update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)', 'paper_bgcolor': 'rgba(0, 0, 0, 0)'})
@@ -357,7 +357,7 @@ def graph_mvp_result(dropdown_year):
 
 def graph_pred_mvp_result(dropdown_year):
     yeardf = df[(df["year"] == dropdown_year) & (df['predictions'] > 0.04)]
-    yeardf['Player'] = yeardf['Player'].apply(lambda x : x.split()[0] if x == 'Giannis Antetokounmpo' else x.split()[1])
+    yeardf['Player'] = yeardf['Player'].apply(lambda x : x.split()[0] if x == 'Giannis Antetokounmpo' or x == 'Magic Johnson' else x.split()[1])
     fig = px.bar(yeardf, x="Player", y="predictions", text='predictions', width=600, height=300)
     fig.update_xaxes(categoryorder="total descending")
     fig.update_layout(xaxis_title=None, yaxis_title=None, margin=dict(l=10, r=10, t=0, b=10)).update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)', 'paper_bgcolor': 'rgba(0, 0, 0, 0)'})
